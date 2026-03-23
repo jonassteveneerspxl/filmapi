@@ -166,6 +166,11 @@
 <main>
     <div class="acties">
         <button onclick="openModal()">+ Film toevoegen</button>
+        <button class="secondary" onclick="filterFilms()">Alle</button>
+        <button class="secondary" onclick="filterFilms('film')">Alleen films</button>
+        <button class="secondary" onclick="filterFilms('serie')">Alleen series</button>
+        <button class="secondary" onclick="filterFilms(null, 1)">Bekeken</button>
+        <button class="secondary" onclick="filterFilms(null, 0)">Niet bekeken</button>
     </div>
     <div class="grid" id="grid"></div>
 </main>
@@ -215,9 +220,20 @@
 <script>
     const API = 'http://localhost/filmapi/public/films';
     let bewerkId = null;
+    let huidigType = null;
+    let huidigBekeken = null;
 
     async function laadFilms() {
-        const res  = await fetch(API);
+        let url = API;
+
+        if (huidigType !== null || huidigBekeken !== null) {
+            const params = new URLSearchParams();
+            if (huidigType !== null)    params.append('type', huidigType);
+            if (huidigBekeken !== null) params.append('bekeken', huidigBekeken);
+            url = `${API}/filter?${params.toString()}`;
+        }
+
+        const res  = await fetch(url);
         const data = await res.json();
 
         const grid   = document.getElementById('grid');
@@ -226,7 +242,7 @@
         teller.textContent = `${data.length} films & series`;
 
         if (data.length === 0) {
-            grid.innerHTML = '<p class="leeg">Nog geen films toegevoegd.</p>';
+            grid.innerHTML = '<p class="leeg">Geen resultaten gevonden.</p>';
             return;
         }
 
@@ -247,6 +263,19 @@
                 </div>
             </div>
         `).join('');
+    }
+
+    function filterFilms(type = null, bekeken = null) {
+        huidigType    = type;
+        huidigBekeken = bekeken;
+
+        // Actieve knop markeren
+        document.querySelectorAll('.acties button.secondary').forEach(btn => {
+            btn.style.background = '#333';
+        });
+        event.target.style.background = '#555';
+
+        laadFilms();
     }
 
     function sterren(beoordeling) {
@@ -308,12 +337,10 @@
 
     async function verwijder(id) {
         if (!confirm('Wil je deze film verwijderen?')) return;
-
         await fetch(`${API}/${id}`, { method: 'DELETE' });
         laadFilms();
     }
 
-    // Sluit modal bij klik buiten
     document.getElementById('modalOverlay').addEventListener('click', function(e) {
         if (e.target === this) sluitModal();
     });

@@ -76,4 +76,26 @@ class FilmModel
         $stmt = $this->db->prepare("DELETE FROM films WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
+
+    public function filter(string $type = null, bool $bekeken = null): array
+    {
+        $sql    = "SELECT * FROM films WHERE 1=1";
+        $params = [];
+
+        if ($type !== null) {
+            $sql      .= " AND type = :type";
+            $params[':type'] = $type;
+        }
+
+        if ($bekeken !== null) {
+            $sql      .= " AND bekeken = :bekeken";
+            $params[':bekeken'] = $bekeken;
+        }
+
+        $sql .= " ORDER BY aangemaakt DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
 }

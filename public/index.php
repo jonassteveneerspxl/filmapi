@@ -20,6 +20,7 @@ $router = new Router();
 $controller = new FilmController();
 
 $router->get('/films',        [$controller, 'index']);
+$router->get('/films/filter', [$controller, 'filter']);
 $router->get('/films/{id}',   [$controller, 'show']);
 $router->post('/films',       [$controller, 'store']);
 $router->put('/films/{id}',   [$controller, 'update']);

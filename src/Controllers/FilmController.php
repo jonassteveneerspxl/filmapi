@@ -38,13 +38,27 @@ class FilmController
     {
         $data = $this->getBody();
 
+        // Titel en type validatie
         if (empty($data['titel']) || empty($data['type'])) {
             $this->json(['error' => 'Titel en type zijn verplicht'], 422);
             return;
         }
 
+        // Type validatie
         if (!in_array($data['type'], ['film', 'serie'])) {
             $this->json(['error' => 'Type moet film of serie zijn'], 422);
+            return;
+        }
+
+        // Jaar validatie
+        if (!empty($data['jaar']) && ($data['jaar'] < 1888 || $data['jaar'] > 2100)) {
+            $this->json(['error' => 'Jaar moet tussen 1888 en 2100 liggen'], 422);
+            return;
+        }
+
+        // Beoordeling validatie
+        if (!empty($data['beoordeling']) && ($data['beoordeling'] < 1 || $data['beoordeling'] > 10)) {
+            $this->json(['error' => 'Beoordeling moet tussen 1 en 10 liggen'], 422);
             return;
         }
 
@@ -65,8 +79,21 @@ class FilmController
 
         $data = $this->getBody();
 
+        // Titel en type validatie
         if (empty($data['titel']) || empty($data['type'])) {
             $this->json(['error' => 'Titel en type zijn verplicht'], 422);
+            return;
+        }
+
+        // Jaar validatie
+        if (!empty($data['jaar']) && ($data['jaar'] < 1888 || $data['jaar'] > 2100)) {
+            $this->json(['error' => 'Jaar moet tussen 1888 en 2100 liggen'], 422);
+            return;
+        }
+
+        // Beoordeling validatie
+        if (!empty($data['beoordeling']) && ($data['beoordeling'] < 1 || $data['beoordeling'] > 10)) {
+            $this->json(['error' => 'Beoordeling moet tussen 1 en 10 liggen'], 422);
             return;
         }
 
@@ -87,6 +114,16 @@ class FilmController
 
         $this->model->delete((int) $id);
         $this->json(['message' => 'Film verwijderd']);
+    }
+
+    // GET /films/filter?type=film&bekeken=true
+    public function filter(): void
+    {
+        $type    = $_GET['type']    ?? null;
+        $bekeken = isset($_GET['bekeken']) ? (bool) $_GET['bekeken'] : null;
+
+        $films = $this->model->filter($type, $bekeken);
+        $this->json($films);
     }
 
     // JSON response sturen

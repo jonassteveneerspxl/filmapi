@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FilmAPI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #1a1a1a;
+            padding: 20px 40px;
+            border-bottom: 2px solid #e50914;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 { color: #e50914; font-size: 1.8rem; }
+
+        main { padding: 40px; }
+
+        .acties {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: #e50914;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #b20710; }
+        button.secondary { background: #333; }
+        button.secondary:hover { background: #444; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .kaart {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #2a2a2a;
+            transition: border-color 0.2s;
+        }
+
+        .kaart:hover { border-color: #e50914; }
+
+        .kaart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .kaart h3 { font-size: 1.1rem; flex: 1; }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+
+        .badge.film { background: #1a3a5c; color: #5b9bd5; }
+        .badge.serie { background: #1a3a2a; color: #5bd58a; }
+
+        .kaart p { font-size: 0.9rem; color: #aaa; margin-bottom: 6px; }
+
+        .sterren { color: #f5c518; font-size: 1rem; margin-bottom: 12px; }
+
+        .bekeken {
+            font-size: 0.8rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .bekeken.ja { background: #1a3a2a; color: #5bd58a; }
+        .bekeken.nee { background: #3a1a1a; color: #d55b5b; }
+
+        .kaart-acties { display: flex; gap: 8px; }
+        .kaart-acties button { padding: 7px 14px; font-size: 0.85rem; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.actief { display: flex; }
+
+        .modal {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 30px;
+            width: 100%;
+            max-width: 480px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .modal h2 { margin-bottom: 20px; }
+
+        .veld { margin-bottom: 15px; }
+        .veld label { display: block; margin-bottom: 6px; font-size: 0.9rem; color: #aaa; }
+
+        .veld input, .veld select {
+            width: 100%;
+            padding: 10px;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        .veld input:focus, .veld select:focus {
+            outline: none;
+            border-color: #e50914;
+        }
+
+        .modal-acties { display: flex; gap: 10px; margin-top: 20px; }
+
+        .fout { color: #e50914; font-size: 0.85rem; margin-top: 10px; }
+
+        .leeg {
+            text-align: center;
+            color: #555;
+            padding: 60px;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🎬 FilmTracker</h1>
+    <span id="teller" style="color:#aaa"></span>
+</header>
+
+<main>
+    <div class="acties">
+        <button onclick="openModal()">+ Film toevoegen</button>
+    </div>
+    <div class="grid" id="grid"></div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h2 id="modalTitel">Film toevoegen</h2>
+        <div class="veld">
+            <label>Titel *</label>
+            <input type="text" id="titel" placeholder="bv. Inception">
+        </div>
+        <div class="veld">
+            <label>Type *</label>
+            <select id="type">
+                <option value="film">Film</option>
+                <option value="serie">Serie</option>
+            </select>
+        </div>
+        <div class="veld">
+            <label>Genre</label>
+            <input type="text" id="genre" placeholder="bv. Sci-Fi">
+        </div>
+        <div class="veld">
+            <label>Jaar</label>
+            <input type="number" id="jaar" placeholder="bv. 2010">
+        </div>
+        <div class="veld">
+            <label>Beoordeling (1-10)</label>
+            <input type="number" id="beoordeling" min="1" max="10" placeholder="bv. 8">
+        </div>
+        <div class="veld">
+            <label>Bekeken</label>
+            <select id="bekeken">
+                <option value="0">Nee</option>
+                <option value="1">Ja</option>
+            </select>
+        </div>
+        <div class="fout" id="fout"></div>
+        <div class="modal-acties">
+            <button onclick="opslaan()">Opslaan</button>
+            <button class="secondary" onclick="sluitModal()">Annuleren</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost/filmapi/public/films';
+    let bewerkId = null;
+
+    async function laadFilms() {
+        const res  = await fetch(API);
+        const data = await res.json();
+
+        const grid   = document.getElementById('grid');
+        const teller = document.getElementById('teller');
+
+        teller.textContent = `${data.length} films & series`;
+
+        if (data.length === 0) {
+            grid.innerHTML = '<p class="leeg">Nog geen films toegevoegd.</p>';
+            return;
+        }
+
+        grid.innerHTML = data.map(film => `
+            <div class="kaart">
+                <div class="kaart-header">
+                    <h3>${film.titel}</h3>
+                    <span class="badge ${film.type}">${film.type}</span>
+                </div>
+                <p>🎭 ${film.genre || '—'} &nbsp;|&nbsp; 📅 ${film.jaar || '—'}</p>
+                <div class="sterren">${sterren(film.beoordeling)}</div>
+                <span class="bekeken ${film.bekeken == 1 ? 'ja' : 'nee'}">
+                    ${film.bekeken == 1 ? '✓ Bekeken' : '✗ Niet bekeken'}
+                </span>
+                <div class="kaart-acties">
+                    <button onclick="openModal(${JSON.stringify(film).replace(/"/g, '&quot;')})">Bewerken</button>
+                    <button class="secondary" onclick="verwijder(${film.id})">Verwijderen</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function sterren(beoordeling) {
+        if (!beoordeling) return '☆☆☆☆☆';
+        const vol  = Math.round(beoordeling / 2);
+        const leeg = 5 - vol;
+        return '★'.repeat(vol) + '☆'.repeat(leeg) + ` (${beoordeling}/10)`;
+    }
+
+    function openModal(film = null) {
+        bewerkId = film ? film.id : null;
+        document.getElementById('modalTitel').textContent = film ? 'Film bewerken' : 'Film toevoegen';
+        document.getElementById('titel').value       = film?.titel       || '';
+        document.getElementById('type').value        = film?.type        || 'film';
+        document.getElementById('genre').value       = film?.genre       || '';
+        document.getElementById('jaar').value        = film?.jaar        || '';
+        document.getElementById('beoordeling').value = film?.beoordeling || '';
+        document.getElementById('bekeken').value     = film?.bekeken     || '0';
+        document.getElementById('fout').textContent  = '';
+        document.getElementById('modalOverlay').classList.add('actief');
+    }
+
+    function sluitModal() {
+        document.getElementById('modalOverlay').classList.remove('actief');
+    }
+
+    async function opslaan() {
+        const data = {
+            titel:       document.getElementById('titel').value,
+            type:        document.getElementById('type').value,
+            genre:       document.getElementById('genre').value,
+            jaar:        document.getElementById('jaar').value        || null,
+            beoordeling: document.getElementById('beoordeling').value || null,
+            bekeken:     document.getElementById('bekeken').value,
+        };
+
+        if (!data.titel) {
+            document.getElementById('fout').textContent = 'Titel is verplicht.';
+            return;
+        }
+
+        const url    = bewerkId ? `${API}/${bewerkId}` : API;
+        const method = bewerkId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (res.ok) {
+            sluitModal();
+            laadFilms();
+        } else {
+            const fout = await res.json();
+            document.getElementById('fout').textContent = fout.error;
+        }
+    }
+
+    async function verwijder(id) {
+        if (!confirm('Wil je deze film verwijderen?')) return;
+
+        await fetch(`${API}/${id}`, { method: 'DELETE' });
+        laadFilms();
+    }
+
+    // Sluit modal bij klik buiten
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) sluitModal();
+    });
+
+    laadFilms();
+</script>
+
+</body>
+</html>
